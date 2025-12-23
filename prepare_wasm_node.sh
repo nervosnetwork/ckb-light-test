@@ -2,6 +2,7 @@ set -x
 git submodule init
 git submodule update
 cd ckb-light-wasm-demo
+git pull
 git checkout gp/support-wasm-node
 git log -1
 git submodule init
