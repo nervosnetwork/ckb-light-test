@@ -32,7 +32,7 @@ describe('get_header', function () {
         let response = await lightClientRPC.getCells({
             script:script,
             scriptType:"lock"
-        }, "asc", "0xfff")
+        }, "asc", "0xff")
 
         let block = await rpcCLient.getBlockByNumber(response.objects[0].blockNumber.toString())
         if (block == undefined) {

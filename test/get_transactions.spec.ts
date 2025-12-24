@@ -26,7 +26,7 @@ describe('get_transactions', function () {
         let txs = await rpcCLient.getTransactions({
             "script": test_scripts[0].script, "scriptType": test_scripts[0].scriptType,
             "groupByTransaction": true
-        }, "asc", "0xfff")
+        }, "asc", "0xff")
         console.log(txs.objects[0].blockNumber)
         console.log(txs.objects[txs.objects.length - 1].blockNumber)
         await lightClientRPC.setScripts([
