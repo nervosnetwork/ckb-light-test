@@ -16,6 +16,7 @@ class LightClient {
     async start(): Promise<boolean> {
         if (checkLightClientWasm()){
             await request(1,this.url,"start",[])
+            await sleep(5*1000)
             return true
         }
         await sh("cd " + this.dirPath + "/target/release && RUST_LOG=info,ckb_light_client=trace ./ckb-light-client run --config-file ./config.toml > node.log 2>&1 &")
