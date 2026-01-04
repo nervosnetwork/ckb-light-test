@@ -51,7 +51,7 @@ describe('get_transactions', function () {
                     filter: {
                         blockRange: [BI.from(12112687).sub(1).toHexString(), BI.from(12116260).toHexString()],
                     }
-                }, "asc", "0xfff", lightAfterCursor
+                }, "asc", "0x1ff", lightAfterCursor
             )
             let ckbTxs = await rpcCLient.getTransactions({
                 "script": test_scripts[0].script, "scriptType": test_scripts[0].scriptType,
@@ -59,7 +59,7 @@ describe('get_transactions', function () {
                 filter: {
                     blockRange: [BI.from(12112687).sub(1).toHexString(), BI.from(12116260).toHexString()],
                 }
-            }, "asc", "0xfff", ckbAfterCursor)
+            }, "asc", "0x1ff", ckbAfterCursor)
 
             console.log("lightTxs.objects.length:", lightTxs.objects.length)
             console.log("ckbTxs.objects.length:", ckbTxs.objects.length)
@@ -93,7 +93,7 @@ describe('get_transactions', function () {
                     filter: {
                         blockRange: [BI.from(12112687).sub(1).toHexString(), BI.from(12116260).toHexString()],
                     }
-                }, "asc", BI.from(5000).toHexString(), lightAfterCursor
+                }, "asc", BI.from(1000).toHexString(), lightAfterCursor
             )
             if(lightTxs.objects.length == 0){
                 return
@@ -105,7 +105,7 @@ describe('get_transactions', function () {
                 filter: {
                     blockRange: [BI.from(12112687).sub(1).toHexString(), BI.from(12116260).toHexString()],
                 }
-            }, "asc", BI.from(5000).toHexString(), ckbAfterCursor)
+            }, "asc", BI.from(1000).toHexString(), ckbAfterCursor)
 
             console.log("lightTxs.objects.length:", lightTxs.objects.length)
             console.log("ckbTxs.objects.length:", ckbTxs.objects.length)
