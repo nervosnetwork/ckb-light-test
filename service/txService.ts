@@ -122,7 +122,7 @@ export async function getCkbTransactionList(scriptObject: Script, script_type: S
 
             },
             "asc",
-            BI.from(3000).toHexString(), lastCursor
+            BI.from(1000).toHexString(), lastCursor
         )
         if (result.objects.length == 0) {
             return txList
@@ -158,7 +158,7 @@ export async function getLightTransactionList(scriptObject: Script, script_type:
 
             },
             "asc",
-            BI.from(3000).toHexString(),lastCursor
+            BI.from(1000).toHexString(),lastCursor
         )
         if (result.objects.length == 0) {
             return txList
@@ -193,7 +193,7 @@ export async function getTransactionsLength(scriptObject: Script, script_type: S
 
             },
             "asc",
-            BI.from(3000).toHexString()
+            BI.from(1000).toHexString()
         )
         if (result.objects.length == 0) {
             break
@@ -216,7 +216,7 @@ export async function getCellsByRange(scriptObject: Script, script_type: ScriptT
             filter: {
                 blockRange: block_range
             }
-        }, "asc", "0xfff", lastCursor)
+        }, "asc", "0x1ff", lastCursor)
         if (result.objects.length == 0) {
             break
         }

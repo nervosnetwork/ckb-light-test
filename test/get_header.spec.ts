@@ -9,7 +9,10 @@ import {waitScriptsUpdate} from "../service/lightService";
 describe('get_header', function () {
 
     this.timeout(600_000)
-
+    it("dd",async ()=>{
+        let acc = generateAccountFromPrivateKey(ACCOUNT_PRIVATE)
+        console.log(acc)
+    })
     it("query the hash that does not exist on the ckb chain,should return null", async () => {
         let response = await getHeader("0x1d7c6f92fa3335bf01c3f43f8970cb586d2dee81b90d363169dbe1bba98d6c11")
         console.log('response:', response)
@@ -20,7 +23,7 @@ describe('get_header', function () {
         let script = generateAccountFromPrivateKey(ACCOUNT_PRIVATE).lockScript
         let cells = await indexerMockLightRpc.getCells({
             script:script,scriptType:"lock"
-        }, "asc","0xfff")
+        }, "asc","0x1ff")
 
         // set scripts :( account,cells[0].height -1 ) ,want to collected cells that not used ;
         await lightClientRPC.setScripts([{script: script,scriptType:"lock", blockNumber: BI.from(cells.objects[0].blockNumber).sub(1).toHexString()}])
@@ -32,7 +35,7 @@ describe('get_header', function () {
         let response = await lightClientRPC.getCells({
             script:script,
             scriptType:"lock"
-        }, "asc", "0xfff")
+        }, "asc", "0x1ff")
 
         let block = await rpcCLient.getBlockByNumber(response.objects[0].blockNumber.toString())
         if (block == undefined) {
