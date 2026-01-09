@@ -27,6 +27,9 @@ jobs:
         run: |
           npm install --save-dev mocha @types/mocha chai @types/chai
           sh prepare_dev.sh
+      - name: Setup upterm session
+        if: ${{ always() }}
+        uses: lhotari/action-upterm@v1      
       - name: run test
         id: ci-test
         run: |
