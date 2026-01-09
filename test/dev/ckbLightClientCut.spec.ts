@@ -84,6 +84,7 @@ describe('rollback', function () {
     it("transfer roll back ", async () => {
         // await miner_block_until_number(1100)
         await cleanAndRestartCkbLightClientEnv()
+        await Sleep(3000);
         await initLightClient()
         await miner_block()
         for (let i = 0; i < 2; i++) {
