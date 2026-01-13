@@ -72,8 +72,7 @@ describe('scenes', function () {
 
             it('exist tx ,but not contains cell tx ,should return null', async () => {
                 await Sleep(1000 * 10);
-                let header = await lightClientRPC.getTipHeader()
-                let txs = await getTransactionsByBlockNum(BI.from(header.number).toNumber(), rpcCLient)
+                let txs = await getTransactionsByBlockNum(19777183, rpcCLient)
                 for (const tx of txs) {
                     let response = await getTransaction(tx)
                     expect(response.transaction).to.be.equal(null)
@@ -82,7 +81,7 @@ describe('scenes', function () {
         });
         describe('send_transaction', function () {
             it('dep in block:0,cell in block:0,should return success ', async () => {
-                rpcCLient.sendTransaction
+
                 let tx = await sendTransaction({
                     "cellDeps": [{
                         "depType": "depGroup",
