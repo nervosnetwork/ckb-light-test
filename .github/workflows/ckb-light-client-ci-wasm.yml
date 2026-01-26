@@ -24,7 +24,6 @@ jobs:
       fail-fast: false
       matrix:
         net: ['testnet_v1']
-        rusqlite: [true, false]
     runs-on: ubuntu-latest
 
     steps:
