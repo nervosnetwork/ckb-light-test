@@ -1,6 +1,21 @@
 name: ci
 
 on:
+  workflow_dispatch:
+    inputs:
+      ckb_light_client_url:
+        description: 'CKB Light Client Repository URL'
+        required: false
+        default: 'https://github.com/nervosnetwork/ckb-light-client.git'
+      ckb_light_client_branch:
+        description: 'CKB Light Client Branch'
+        required: false
+        default: 'develop'
+      rusqlite:
+        description: 'Enable rusqlite feature'
+        required: false
+        default: ''
+        type: string
   push:
     branches:
       - master
