@@ -6,16 +6,12 @@ on:
       ckb_light_client_url:
         description: 'CKB Light Client Repository URL'
         required: false
-        default: 'https://github.com/nervosnetwork/ckb-light-client.git'
+        default: 'https://github.com/Officeyutong/ckb-light-client.git'
       ckb_light_client_branch:
         description: 'CKB Light Client Branch'
         required: false
-        default: 'develop'
-      rusqlite:
-        description: 'Enable rusqlite feature'
-        required: false
-        default: ''
-        type: string
+        default: 'use-trait-for-storage-functions'
+
   push:
     branches:
       - master
@@ -53,9 +49,9 @@ jobs:
       - name: prepare env
         id: runtest
         env:
-          CKB_LIGHT_CLIENT_URL: ${{ github.event.inputs.ckb_light_client_url || 'https://github.com/nervosnetwork/ckb-light-client.git' }}
-          CKB_LIGHT_CLIENT_BRANCH: ${{ github.event.inputs.ckb_light_client_branch || 'develop' }}
-          RUSQLITE: ${{ github.event.inputs.rusqlite }}
+          CKB_LIGHT_CLIENT_URL: ${{ github.event.inputs.ckb_light_client_url || 'https://github.com/Officeyutong/ckb-light-client.git' }}
+          CKB_LIGHT_CLIENT_BRANCH: ${{ github.event.inputs.ckb_light_client_branch || 'use-trait-for-storage-functions' }}
+          RUSQLITE: ${{ matrix.rusqlite && '1' || '' }}
         run: |
           npm install --save-dev mocha @types/mocha chai @types/chai
           bash prepare_wasm.sh
