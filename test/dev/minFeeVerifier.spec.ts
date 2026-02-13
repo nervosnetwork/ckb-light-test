@@ -48,7 +48,8 @@ describe('minFeeVerifier', function () {
     it("fee too low",async ()=>{
         await miner_block()
         let tip_num = await rpcDevCLient.getTipBlockNumber()
-        await waitScriptsUpdate(BI.from(tip_num))
+        await waitScriptsUpdate(BI.from(tip_num));
+        await Sleep(3000);
         // transfer fee too low
         try {
             await transferDevService.transfer({
@@ -68,7 +69,7 @@ describe('minFeeVerifier', function () {
                 to: acc2.address,
                 amount: BI.from(100).toHexString(),
                 privKey: ACCOUNT_PRIVATE,
-                fee: 464,
+                fee: 4640,
                 lightMode:true,
                 lightNotInstallCellMode:true
             });
