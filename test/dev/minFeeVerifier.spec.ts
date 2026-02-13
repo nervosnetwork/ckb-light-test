@@ -68,7 +68,7 @@ describe('minFeeVerifier', function () {
                 to: acc2.address,
                 amount: BI.from(100).toHexString(),
                 privKey: ACCOUNT_PRIVATE,
-                fee: 464,
+                fee: 4640,
                 lightMode:true,
                 lightNotInstallCellMode:true
             });
