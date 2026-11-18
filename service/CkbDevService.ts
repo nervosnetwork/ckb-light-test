@@ -133,7 +133,7 @@ export async function cleanCkbLightClientEnv() {
 }
 
 export async function stopCkbLightClient() {
-    await shWithTimeOutNotErr("pkill ckb-light-client",1000)
+    await shWithTimeOutNotErr("pkill ckb-light",1000)
 }
 
 export async function startCkbLightClient() {
