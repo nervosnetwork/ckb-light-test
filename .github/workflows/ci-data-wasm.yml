@@ -11,11 +11,6 @@ on:
         description: 'CKB Light Client Branch'
         required: false
         default: 'develop'
-      rusqlite:
-        description: 'Enable rusqlite feature'
-        required: false
-        default: ''
-        type: string
   push:
     branches:
       - master
@@ -42,7 +37,6 @@ jobs:
         env:
           CKB_LIGHT_CLIENT_URL: ${{ github.event.inputs.ckb_light_client_url || 'https://github.com/nervosnetwork/ckb-light-client.git' }}
           CKB_LIGHT_CLIENT_BRANCH: ${{ github.event.inputs.ckb_light_client_branch || 'develop' }}
-          RUSQLITE: ${{ github.event.inputs.rusqlite }}
         run: |
           bash prepare_wasm.sh
           npm install --save-dev mocha @types/mocha chai @types/chai
