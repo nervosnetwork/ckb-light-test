@@ -10,6 +10,7 @@
     "node": ">=10"
   },
   "dependencies": {
+    "@ckb-lumos/base": "v0.20.0-alpha.1",
     "@ckb-lumos/codec": "v0.20.0-alpha.1",
     "@ckb-lumos/light-client": "v0.20.0-alpha.1",
     "@ckb-lumos/lumos": "v0.20.0-alpha.1",
@@ -51,6 +52,7 @@
     "test-roll-back": "mocha --config test/runners/mocha/.mocharc.light.rollback.jsonc --reporter mochawesome",
     "test-roll-back:transfer": "mocha --config test/runners/mocha/.mocharc.light.rollback.jsonc --grep \"transfer\"--reporter mochawesome",
     "test-roll-back:cut10": "mocha --config test/runners/mocha/.mocharc.light.rollback.jsonc --grep \"cut 10\"--reporter mochawesome",
-    "test-roll-back:cut300": "mocha --config test/runners/mocha/.mocharc.light.rollback.jsonc --grep \"cut 300\"--reporter mochawesome"
+    "test-roll-back:cut300": "mocha --config test/runners/mocha/.mocharc.light.rollback.jsonc --grep \"cut 300\"--reporter mochawesome",
+    "test:integration": "node test/runners/mocha/integration.cjs"
   }
 }

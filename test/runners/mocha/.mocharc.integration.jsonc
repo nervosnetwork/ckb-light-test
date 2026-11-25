@@ -1,0 +1,16 @@
+{
+  "require": [
+    "test/runners/mocha/init.integration.js",
+    "test/runners/mocha/native-pending.cjs"
+  ],
+  "spec": [
+    "test/tests/**/*.spec.ts"
+  ],
+  "fail-zero": true,
+  "forbid-only": true,
+  "ignore": [
+    "test/tests/**/*.browser.spec.ts"
+  ],
+  "parallel": true,
+  "jobs": 2
+}

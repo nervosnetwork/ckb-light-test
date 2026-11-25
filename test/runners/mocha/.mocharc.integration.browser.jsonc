@@ -1,0 +1,11 @@
+{
+  "require": [
+    "test/runners/mocha/init.integration.js"
+  ],
+  "spec": [
+    "test/tests/**/*.browser.spec.ts"
+  ],
+  "fail-zero": true,
+  "forbid-only": true,
+  "forbid-pending": true
+}
