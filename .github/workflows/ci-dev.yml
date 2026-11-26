@@ -1,55 +1,33 @@
 name: ci-dev
 
 on:
+  # One automatic caller so PRs and master pushes do not compile the same nodes twice.
+  push:
+    branches: [master]
+  pull_request:
   workflow_dispatch:
     inputs:
       ckb_light_client_url:
-        description: 'CKB Light Client Repository URL'
-        required: false
+        type: string
+        description: CKB Light Client repository URL
         default: 'https://github.com/nervosnetwork/ckb-light-client.git'
       ckb_light_client_branch:
-        description: 'CKB Light Client Branch'
-        required: false
+        type: string
+        description: Light client branch, tag or commit
         default: 'develop'
-  push:
-    branches:
-      - master
-  pull_request:
+      ckb_ref:
+        type: string
+        description: Full node branch, tag or commit (default is the verified baseline)
+        required: false
 
+permissions:
+  contents: read
 
 jobs:
-  npm-install-1:
-    strategy:
-      fail-fast: false
-      matrix:
-        net: ['testnet_v1']
-        rusqlite: [true, false]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - name: prepare env
-        id: runtest
-        env:
-          CKB_LIGHT_CLIENT_URL: ${{ github.event.inputs.ckb_light_client_url || 'https://github.com/nervosnetwork/ckb-light-client.git' }}
-          CKB_LIGHT_CLIENT_BRANCH: ${{ github.event.inputs.ckb_light_client_branch || 'develop' }}
-          RUSQLITE: ${{ matrix.rusqlite && '1' || '' }}
-        run: |
-          npm install --save-dev mocha @types/mocha chai @types/chai
-          sh prepare_dev.sh
-      - name: run test
-        id: ci-test
-        run: |
-          npm run test-dev
-
-      - name: Publish reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jfoa-build-reports-${{ runner.os }}
-          path: mochawesome-report/
+  regression:
+    uses: ./.github/workflows/ci-node-regressions.yml
+    with:
+      suite: ${{ github.event_name == 'workflow_dispatch' && 'ci-dev' || 'all' }}
+      ckb_light_client_url: ${{ inputs.ckb_light_client_url }}
+      ckb_light_client_branch: ${{ inputs.ckb_light_client_branch }}
+      ckb_ref: ${{ inputs.ckb_ref }}

@@ -2,17 +2,13 @@ import {config, helpers, Indexer, RPC} from "@ckb-lumos/lumos";
 import {LightClient} from "../service/node";
 import {LightClientCli} from "../service/light-cli";
 import {LightClientRPC} from "@ckb-lumos/light-client";
-import {CkbIndexer} from "@ckb-lumos/ckb-indexer/lib/indexer";
+import {CKB_DEV_PATH, CKB_DEV_LIGHT_CLIENT_PATH, DEV_PATH} from "./dev_paths";
 
 const CKB_CLIENT_CLI_PATH = "tmp/ckb-cli-light-client"
 const CKB_LIGHT_CLIENT_PATH = "tmp/startBlockchain/ckbLightClient/ckb-light-client"
-const DEV_PATH = "tmp/startBlockchain/ckbDevWithIndexAndLightClient"
-const CKB_DEV_PATH = "tmp/startBlockchain/ckbDevWithIndexAndLightClient/ckb/target/release"
-const CKB_DEV_INDEX_PATH = "tmp/startBlockchain/ckbDevWithIndexAndLightClient/ckb-indexer/target/release"
-const CKB_DEV_LIGHT_CLIENT_PATH = "tmp/startBlockchain/ckbDevWithIndexAndLightClient/ckb-light-client/target/release"
 
 const CKB_DEV_RPC_URL = "http://localhost:8114/";
-const CKB_DEV_RPC_INDEX_URL = "http://localhost:8114/";
+const CKB_DEV_RPC_INDEX_URL = CKB_DEV_RPC_URL; // 索引查询由同一个 CKB 节点处理。
 
 const RPC_DEBUG = true
 const CKB_RPC_URL = "https://testnet.ckbapp.dev/";
@@ -47,7 +43,7 @@ const newFullAddr = helpers.encodeToAddress(script);
 const rpcCLient = new RPC(CKB_RPC_URL);
 const rpcDevCLient = new RPC(CKB_DEV_RPC_URL);
 
-export const rpcDevIndexClient = new CkbIndexer(CKB_DEV_RPC_URL,CKB_DEV_RPC_URL);
+export const rpcDevIndexClient = new Indexer(CKB_DEV_RPC_URL, CKB_DEV_RPC_URL);
 
 
 const {AGGRON4} = config.predefined;
@@ -115,7 +111,6 @@ export {
     CKB_DEV_RPC_URL,
     CKB_DEV_RPC_INDEX_URL,
     DEV_PATH,
-    CKB_DEV_INDEX_PATH,
     CKB_DEV_LIGHT_CLIENT_PATH,
     lightClientRPC,
     indexerMockLightRpc

@@ -1,0 +1,28 @@
+name: Install shared dev nodes
+description: Restore the full node and the selected light client from this run at the fixed dev paths.
+inputs:
+  backend:
+    description: rocksdb or sqlite
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: dev-node-ckb
+        path: ${{ runner.temp }}/dev-nodes
+    - uses: actions/download-artifact@v4
+      with:
+        name: dev-node-${{ inputs.backend }}
+        path: ${{ runner.temp }}/dev-nodes
+    - name: Verify checksums and restore executable modes and fixture files
+      shell: bash
+      env:
+        BACKEND: ${{ inputs.backend }}
+      run: |
+        case "$BACKEND" in rocksdb|sqlite) ;; *) exit 2 ;; esac
+        bundles="$RUNNER_TEMP/dev-nodes"
+        (cd "$bundles" && sha256sum -c ckb.sha256 "$BACKEND.sha256")
+        mkdir -p tmp/startBlockchain
+        tar -xf "$bundles/ckb.tar" -C tmp/startBlockchain
+        tar -xf "$bundles/$BACKEND.tar" -C tmp/startBlockchain

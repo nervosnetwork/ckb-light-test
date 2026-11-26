@@ -1,1 +1,6 @@
 todo
+
+# Installed/build outputs; reviewed test sources and retained evidence stay visible.
+node_modules/
+/tmp/
+/mochawesome-report/

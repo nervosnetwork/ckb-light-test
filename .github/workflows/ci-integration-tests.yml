@@ -1,0 +1,108 @@
+name: Normal communication tests
+
+on:
+  workflow_call:
+    inputs:
+      backend:
+        type: string
+        required: true
+      light_commit:
+        type: string
+        required: true
+      light_repo:
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      RUSQLITE: ${{ inputs.backend == 'sqlite' && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-dev-nodes
+        with:
+          backend: ${{ inputs.backend }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Check case IDs and runner discovery
+        run: node test/runners/mocha/check-integration-cases.cjs
+      - name: Run isolated normal-communication regression
+        id: integration
+        run: npm run test:integration
+      - name: Save case results
+        if: ${{ !cancelled() && steps.integration.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results-${{ inputs.backend }}
+          path: ${{ runner.temp }}/ckb-light-integration/*/run-*/result.json
+          overwrite: true
+          retention-days: 14
+      - name: Save RPC traces and node logs on integration failure
+        if: failure() && steps.integration.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-diagnostics-${{ inputs.backend }}
+          path: |
+            ${{ runner.temp }}/ckb-light-integration/*/run-*/rpc.jsonl
+            ${{ runner.temp }}/ckb-light-integration/*/run-*/*.log
+            ${{ runner.temp }}/ckb-light-integration/*/run-*/full-*/data/logs/*.log
+          overwrite: true
+          retention-days: 7
+
+  browser:
+    name: Browser / IndexedDB
+    # IndexedDB is one deployment surface, not a third native backend.
+    if: inputs.backend == 'rocksdb'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build the browser bundle at the same light-client commit
+        env:
+          CKB_LIGHT_CLIENT_URL: ${{ inputs.light_repo }}
+          CKB_LIGHT_CLIENT_BRANCH: ${{ inputs.light_commit }}
+        run: sh scripts/ci/build-dev-node.sh browser
+      # Overlay the native executables after checking out the browser source.
+      - uses: ./.github/actions/install-dev-nodes
+        with:
+          backend: ${{ inputs.backend }}
+      - uses: browser-actions/setup-chrome@v2
+        id: chrome
+        with:
+          chrome-version: stable
+          install-dependencies: true
+      - name: Run real browser / dev WebSocket regression
+        id: browser_tests
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
+          CHROME_NO_SANDBOX: '1'
+        run: npm run test:integration -- --browser
+      - name: Save browser evidence
+        if: ${{ !cancelled() && steps.browser_tests.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-browser-indexeddb
+          path: |
+            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/result.json
+            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/browser.jsonl
+            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/rpc.jsonl
+            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/full-*/data/logs/*.log
+          overwrite: true
+          retention-days: 14

@@ -1,0 +1,45 @@
+name: Legacy dev tests
+
+on:
+  workflow_call:
+    inputs:
+      backend:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  legacy:
+    name: test-dev
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      RUSQLITE: ${{ inputs.backend == 'sqlite' && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-dev-nodes
+        with:
+          backend: ${{ inputs.backend }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          cache: npm
+      # npm 8 would add a newer TypeScript for an optional tooling peer that is
+      # absent from the shared lockfile. Keep the legacy runner on the locked tree.
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Start legacy dev services
+        run: sh prepare_dev.sh --start-only
+      - name: Run legacy dev tests
+        id: legacy
+        run: npm run test-dev
+      - name: Save legacy failure report
+        if: failure() && steps.legacy.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-dev-report-${{ inputs.backend }}
+          path: mochawesome-report/
+          overwrite: true

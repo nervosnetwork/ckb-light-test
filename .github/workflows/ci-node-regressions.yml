@@ -1,0 +1,104 @@
+name: Shared dev node regressions
+
+on:
+  workflow_call:
+    inputs:
+      suite:
+        description: all, ci-dev or ci-integration
+        type: string
+        required: true
+      ckb_light_client_url:
+        type: string
+      ckb_light_client_branch:
+        type: string
+      ckb_ref:
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  revisions:
+    name: Resolve source commits once
+    runs-on: ubuntu-24.04
+    outputs:
+      full: ${{ steps.refs.outputs.full }}
+      light: ${{ steps.refs.outputs.light }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Pin full node and light client for this run
+        id: refs
+        env:
+          FULL_REF: ${{ inputs.ckb_ref || '13adbb869278662c5b79a0d62c066281451f5e3e' }}
+          LIGHT_REPO: ${{ inputs.ckb_light_client_url || 'https://github.com/nervosnetwork/ckb-light-client.git' }}
+          LIGHT_REF: ${{ inputs.ckb_light_client_branch || 'develop' }}
+        run: |
+          full=$(sh scripts/ci/resolve-commit.sh https://github.com/nervosnetwork/ckb.git "$FULL_REF")
+          light=$(sh scripts/ci/resolve-commit.sh "$LIGHT_REPO" "$LIGHT_REF")
+          printf 'full=%s\nlight=%s\n' "$full" "$light" | tee -a "$GITHUB_OUTPUT"
+
+  # Each binary is published once per run. A suite needs only its own backend:
+  # a failed SQLite build cannot suppress the RocksDB tests (or vice versa).
+  ckb:
+    name: Build / CKB
+    needs: revisions
+    uses: ./.github/workflows/build-dev-node.yml
+    with:
+      target: ckb
+      commit: ${{ needs.revisions.outputs.full }}
+
+  rocksdb:
+    name: Build / RocksDB light client
+    needs: revisions
+    uses: ./.github/workflows/build-dev-node.yml
+    with:
+      target: rocksdb
+      commit: ${{ needs.revisions.outputs.light }}
+      light_repo: ${{ inputs.ckb_light_client_url }}
+
+  sqlite:
+    name: Build / SQLite light client
+    needs: revisions
+    uses: ./.github/workflows/build-dev-node.yml
+    with:
+      target: sqlite
+      commit: ${{ needs.revisions.outputs.light }}
+      light_repo: ${{ inputs.ckb_light_client_url }}
+
+  dev-rocksdb:
+    name: ci-dev / RocksDB
+    if: inputs.suite != 'ci-integration'
+    needs: [ckb, rocksdb]
+    uses: ./.github/workflows/ci-dev-tests.yml
+    with:
+      backend: rocksdb
+
+  dev-sqlite:
+    name: ci-dev / SQLite
+    if: inputs.suite != 'ci-integration'
+    needs: [ckb, sqlite]
+    uses: ./.github/workflows/ci-dev-tests.yml
+    with:
+      backend: sqlite
+
+  integration-rocksdb:
+    name: ci-integration / RocksDB
+    if: inputs.suite != 'ci-dev'
+    needs: [revisions, ckb, rocksdb]
+    uses: ./.github/workflows/ci-integration-tests.yml
+    with:
+      backend: rocksdb
+      light_commit: ${{ needs.revisions.outputs.light }}
+      light_repo: ${{ inputs.ckb_light_client_url }}
+
+  integration-sqlite:
+    name: ci-integration / SQLite
+    if: inputs.suite != 'ci-dev'
+    needs: [revisions, ckb, sqlite]
+    uses: ./.github/workflows/ci-integration-tests.yml
+    with:
+      backend: sqlite
+      light_commit: ${{ needs.revisions.outputs.light }}
+      light_repo: ${{ inputs.ckb_light_client_url }}
