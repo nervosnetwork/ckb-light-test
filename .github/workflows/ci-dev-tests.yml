@@ -28,7 +28,9 @@ jobs:
         with:
           node-version: '16'
           cache: npm
-      - run: npm ci --no-audit --no-fund
+      # npm 8 would add a newer TypeScript for an optional tooling peer that is
+      # absent from the shared lockfile. Keep the legacy runner on the locked tree.
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Start legacy dev services
         run: sh prepare_dev.sh --start-only
       - name: Run legacy dev tests
