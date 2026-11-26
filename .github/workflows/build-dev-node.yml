@@ -1,0 +1,42 @@
+name: Build dev node
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        required: true
+      commit:
+        type: string
+        required: true
+      light_repo:
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build and package one pinned executable
+        env:
+          TARGET: ${{ inputs.target }}
+          CKB_REF: ${{ inputs.commit }}
+          CKB_LIGHT_CLIENT_BRANCH: ${{ inputs.commit }}
+          CKB_LIGHT_CLIENT_URL: ${{ inputs.light_repo }}
+          # Older bundled RocksDB headers assume uint64_t is defined transitively.
+          CXXFLAGS: -include cstdint
+        run: |
+          sh scripts/ci/build-dev-node.sh "$TARGET"
+          sh scripts/ci/pack-dev-node.sh "$TARGET" "$RUNNER_TEMP/bundle"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dev-node-${{ inputs.target }}
+          path: ${{ runner.temp }}/bundle/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14

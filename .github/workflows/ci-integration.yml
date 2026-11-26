@@ -1,0 +1,29 @@
+name: ci-integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      ckb_light_client_url:
+        type: string
+        description: CKB Light Client repository URL
+        default: 'https://github.com/nervosnetwork/ckb-light-client.git'
+      ckb_light_client_branch:
+        type: string
+        description: Light client branch, tag or commit
+        default: 'develop'
+      ckb_ref:
+        type: string
+        description: Full node branch, tag or commit (default is the verified baseline)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    uses: ./.github/workflows/ci-node-regressions.yml
+    with:
+      suite: ci-integration
+      ckb_light_client_url: ${{ inputs.ckb_light_client_url }}
+      ckb_light_client_branch: ${{ inputs.ckb_light_client_branch }}
+      ckb_ref: ${{ inputs.ckb_ref }}

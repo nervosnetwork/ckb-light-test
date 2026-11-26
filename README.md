@@ -23,7 +23,8 @@ npm run test:integration -- --fgrep LC-STORE-       # 一个模块
 
 本机要复核另一个后端，等当前一轮结束后执行 `sh prepare_dev.sh --build-only --backend sqlite`（或 `rocksdb`），再运行同一条 `npm run test:integration`。两个构建使用相同的固定程序路径，测试数据则每轮重新创建；CI 在两个独立环境中并行运行。
 
-- **CI：** 在 `ci-dev` 中，RocksDB、SQLite 两个独立任务各执行同一套 native 用例。检查点和多节点场景也在回归内。手动触发时可选轻端分支、标签或提交，也可指定全节点版本。CI 先将两个版本各解析为一个提交，所有后端共用，再记录实际二进制版本、校验值与实际打开的存储类型。旧版 `test-dev` 的固定端口服务在隔离用例之后才启动。
+- **CI：** PR 和推送到 `master` 时，[公共构建流程](.github/workflows/ci-node-regressions.yml)只触发一次。它固定两个源码提交，构建一份 CKB 全节点和各一份 RocksDB、SQLite 轻客户端；各测试 runner 从**同一次运行**下载并校验产物，不重新编译或共享节点数据。每个后端只等自己的轻客户端和公共全节点。
+- **两套独立检查：** [ci-dev](.github/workflows/ci-dev.yml) 用 Node 16 启动旧的固定端口服务，执行 `npm run test-dev`；[ci-integration](.github/workflows/ci-integration.yml) 用 Node 24 执行 `npm run test:integration`。二者不互相等待。手动回归时，在 **Actions** 选择对应套件，再点 **Run workflow**，两者都可以指定全节点版本、轻客户端仓库和版本。PR 上的两套检查由同一次运行调度；单独手动启动的运行自行构建，不读取其他 PR 的产物。
 - **浏览器：** IndexedDB 是独立部署，不算作 native 双后端之一。用选定版本在 `tmp/startBlockchain/ckbDevWithIndexAndLightClient/ckb-light-client/` 下执行 `make build-wasm`（需要 wasm-pack、wasm32 target 和 clang），准备 Chrome，再回到仓库根目录运行 `npm run test:integration -- --browser`。CI 单独收集这类用例一次；没有真实浏览器或配套 JS bundle 应报告前置条件缺失，不以跳过算成功。
 - **新增用例：** 在 `test/tests/` 的模块目录放 `*.spec.ts`（浏览器为 `*.browser.spec.ts`），让标题、`TEST-MAP` 和评审表共用稳定 Case ID。无需新增 npm 命令或 CI 步骤。`node test/runners/mocha/check-integration-cases.cjs` 可单独核对登记和映射，不启动节点。
 - **暂时跳过：** 原生回归保留 `LC-STORE-006`、`LC-STORE-007` 的断言，两个后端均报告为 pending，不启动这两例的节点。原因及恢复步骤见[存储用例说明](reviews/normal-communication/05-storage-pagination.md)；其他用例意外跳过仍会使 CI 失败。

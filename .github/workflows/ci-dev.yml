@@ -1,156 +1,33 @@
 name: ci-dev
 
 on:
-  workflow_dispatch:
-    inputs:
-      ckb_light_client_url:
-        description: CKB Light Client repository URL
-        default: 'https://github.com/nervosnetwork/ckb-light-client.git'
-      ckb_light_client_branch:
-        description: Light client branch, tag or commit
-        default: 'develop'
-      ckb_ref:
-        description: Full node branch, tag or commit (default is the verified baseline)
-        required: false
+  # One automatic caller so PRs and master pushes do not compile the same nodes twice.
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      ckb_light_client_url:
+        type: string
+        description: CKB Light Client repository URL
+        default: 'https://github.com/nervosnetwork/ckb-light-client.git'
+      ckb_light_client_branch:
+        type: string
+        description: Light client branch, tag or commit
+        default: 'develop'
+      ckb_ref:
+        type: string
+        description: Full node branch, tag or commit (default is the verified baseline)
+        required: false
 
 permissions:
   contents: read
 
 jobs:
-  revisions:
-    name: Resolve source commits once
-    runs-on: ubuntu-latest
-    outputs:
-      full: ${{ steps.refs.outputs.full }}
-      light: ${{ steps.refs.outputs.light }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Pin full node and light client for this run
-        id: refs
-        env:
-          FULL_REF: ${{ inputs.ckb_ref || '13adbb869278662c5b79a0d62c066281451f5e3e' }}
-          LIGHT_REPO: ${{ inputs.ckb_light_client_url || 'https://github.com/nervosnetwork/ckb-light-client.git' }}
-          LIGHT_REF: ${{ inputs.ckb_light_client_branch || 'develop' }}
-        run: |
-          full=$(sh scripts/ci/resolve-commit.sh https://github.com/nervosnetwork/ckb.git "$FULL_REF")
-          light=$(sh scripts/ci/resolve-commit.sh "$LIGHT_REPO" "$LIGHT_REF")
-          printf 'full=%s\nlight=%s\n' "$full" "$light" | tee -a "$GITHUB_OUTPUT"
   regression:
-    needs: revisions
-    name: Real CKB / ${{ matrix.backend }}
-    strategy:
-      fail-fast: false
-      matrix:
-        backend: [rocksdb, sqlite]
-    runs-on: ubuntu-latest
-    timeout-minutes: 360
-    env:
-      RUSQLITE: ${{ matrix.backend == 'sqlite' && '1' || '' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-      - name: Install locked test dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Check case IDs and runner discovery
-        run: node test/runners/mocha/check-integration-cases.cjs
-      - name: Build full node and light client (no running nodes)
-        id: build
-        env:
-          CKB_REF: ${{ needs.revisions.outputs.full }}
-          CKB_LIGHT_CLIENT_URL: ${{ inputs.ckb_light_client_url }}
-          CKB_LIGHT_CLIENT_BRANCH: ${{ needs.revisions.outputs.light }}
-        run: sh prepare_dev.sh --build-only --backend "${{ matrix.backend }}"
-
-      - name: Run isolated normal-communication regression
-        id: integration
-        run: npm run test:integration
-      - name: Save case results
-        if: ${{ !cancelled() && steps.integration.outcome != 'skipped' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-results-${{ matrix.backend }}
-          path: ${{ runner.temp }}/ckb-light-integration/*/run-*/result.json
-          retention-days: 14
-      - name: Save RPC traces and node logs on integration failure
-        if: ${{ failure() && steps.integration.outcome == 'failure' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-diagnostics-${{ matrix.backend }}
-          path: |
-            ${{ runner.temp }}/ckb-light-integration/*/run-*/rpc.jsonl
-            ${{ runner.temp }}/ckb-light-integration/*/run-*/*.log
-            ${{ runner.temp }}/ckb-light-integration/*/run-*/full-*/data/logs/*.log
-          retention-days: 7
-
-      # IndexedDB is a different deployment surface, not another native database build.
-      # Run it once against the same selected revision, independently of native test outcomes.
-      - name: Set up headless Chrome
-        id: chrome
-        if: ${{ !cancelled() && matrix.backend == 'rocksdb' && steps.build.outcome == 'success' }}
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: stable
-          install-dependencies: true
-      - name: Build matching browser light client
-        id: wasm_build
-        if: ${{ !cancelled() && steps.chrome.outcome == 'success' }}
-        working-directory: tmp/startBlockchain/ckbDevWithIndexAndLightClient/ckb-light-client
-        run: |
-          rustup target add wasm32-unknown-unknown
-          cargo install --locked wasm-pack --version 0.15.0
-          make build-wasm
-          test -s wasm/light-client-js/dist/index.js
-      - name: Run real browser / dev WebSocket regression
-        id: browser_tests
-        if: ${{ !cancelled() && steps.wasm_build.outcome == 'success' }}
-        env:
-          CHROME: ${{ steps.chrome.outputs.chrome-path }}
-          CHROME_NO_SANDBOX: '1'
-        run: npm run test:integration -- --browser
-      - name: Save browser evidence
-        if: ${{ !cancelled() && matrix.backend == 'rocksdb' && steps.browser_tests.outcome != 'skipped' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-browser-indexeddb
-          path: |
-            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/result.json
-            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/browser.jsonl
-            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/rpc.jsonl
-            ${{ runner.temp }}/ckb-light-integration-browser/*/run-*/full-*/data/logs/*.log
-          retention-days: 14
-
-      # Preserve the legacy test-dev target. Its fixed-port services never run alongside an isolated case.
-      - name: Node for legacy dev tests
-        id: legacy_node
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: '16'
-      - name: Install locked dependencies for the legacy Node runtime
-        id: legacy_deps
-        if: ${{ !cancelled() && steps.legacy_node.outcome == 'success' }}
-        run: npm ci --no-audit --no-fund
-      - name: Start legacy dev services
-        id: legacy_services
-        if: ${{ !cancelled() && steps.legacy_deps.outcome == 'success' }}
-        run: sh prepare_dev.sh --start-only
-      - name: Run legacy dev tests
-        id: legacy
-        if: ${{ !cancelled() && steps.legacy_services.outcome == 'success' }}
-        run: npm run test-dev
-      - name: Save legacy failure report
-        if: ${{ failure() && steps.legacy.outcome == 'failure' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: legacy-dev-report-${{ matrix.backend }}
-          path: mochawesome-report/
+    uses: ./.github/workflows/ci-node-regressions.yml
+    with:
+      suite: ${{ github.event_name == 'workflow_dispatch' && 'ci-dev' || 'all' }}
+      ckb_light_client_url: ${{ inputs.ckb_light_client_url }}
+      ckb_light_client_branch: ${{ inputs.ckb_light_client_branch }}
+      ckb_ref: ${{ inputs.ckb_ref }}
